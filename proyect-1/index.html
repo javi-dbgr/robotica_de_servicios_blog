@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>exercise 1</title>
+  <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/grids-responsive-min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <div id="layout">
+    <div id="main">
+      <div class="header">
+        <h1>vacuum cleaner</h1>
+        <h2>a reactive approach</h2>
+      </div>
+
+      <div class="content">
+
+        <h2 class="content-subhead">First approach</h2>
+        <p>
+          First I decided to use the bumper, and came with the following FSM:
+        </p>
+
+        <img class="pure-img-responsive" src="images/diagrama_1.png" alt="diagram 1">
+
+        <h2 class="content-subhead">Using the laser</h2>
+        <p>
+          When testing the design, I realised that the methods to access the
+          bumper state were giving me problems, so I started using the
+          laser. Since there was no physical contact anymore,
+          the GoBackward state was no longer needed, so I removed it.
+        </p>
+
+        <img class="pure-img-responsive" src="images/diagrama_2.png" alt="diagram 2">
+
+        <p>
+          The timers are chosen randomly, and variations of the range
+          yields different results. For example, at first I thought that
+          the best way to do it was to set short timers, so that
+          the robot would stick to the walls. There were one problem:
+          when it entered a room, it could not get out.
+          The following video shows the problem:
+        </p>
+        <iframe width="853" height="480" src="https://www.youtube.com/embed/APs81qlKIVQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+        <p>
+          To solve this, I put larger ranges for the timers. I also
+          changed the probability distribution, slightly favoring
+          smaller timers(i.e. smaller turns) to favor the current
+          direction of movement, without losing the possibility of
+          making bigger turns.
+        </p>
+        <p>
+          By that time, I also added the DoSpiral state:
+        </p>
+
+        <img class="pure-img-responsive" src="images/diagrama_3.png" alt="diagram 2">
+
+        <p>
+          DoSpiral activates with a certain probability, currently at 1%.
+        </p>
+
+        <h2 class="content-subhead">Final version demo</h2>
+        <p>
+          Here is a timelapse of a ~15 min attempt:
+        </p>
+        <p>
+          (due to a bug in the platform, the evaluator stops when
+          a dialogue pops up, so i cannot test it for extended
+          periods of time)
+        </p>
+
+        <iframe width="853" height="480" src="https://www.youtube.com/embed/OqDG8FnTQgk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+
+      </div>
+    </div>
+  </div>
+  <script src="../../ui.js"></script>
+</body>
+</html>
