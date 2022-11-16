@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>exercise 1</title>
+  <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/grids-responsive-min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <div id="layout">
+    <div id="main">
+      <div class="header">
+        <h1>Aerial rescue robot</h1>
+        <h2>a vision based approach</h2>
+      </div>
+
+      <div class="content">
+
+        <h2 class="content-subhead">Desired behavior</h2>
+        <p>
+          <ul>
+            <li> The robot goes to the approximate given location of
+                    the group of people </li>
+            <li> Begins to follow a square spiral path. </li>
+            <li> Meanwhile, tries to detect people with the camera facing down</li>
+            <li> When all people are detected, returns to the boat</li>
+        </ul>
+        
+        </p>
+
+        <img class="pure-img-responsive" src="images/diagrama_1.png" alt="diagram 1">
+
+        <h2 class="content-subhead">Approximate location of people</h2>
+        <p>
+          We are given the GPS coordinates locations of the boat
+          an the survivors.
+          <ul>
+            <li>Safety boat: 40º16'48.2" N, 3º49'03.5" W</li>
+            <li>Survivors: 40º16'47.23" N, 3º49'01.78" W</li>
+          </ul>
+
+          Converting them to UTM with <a href="http://rcn.montana.edu/Resources/Converter.aspx">this</a>
+          I get:
+          <ul>
+            <li>Safety boat: 430532m E, 4459132m N</li>
+            <li>Survivors: 430492m E, 4459162m N</li>
+          </ul>
+
+          To obtain the relative position, I subtract them, getting: (40m, -30m)
+        </p>
+
+        <h2 class="content-subhead">Square spiral path</h2>
+        <p>
+          There are two parts that take care of this:
+          global navigation and local navigation
+        </p>
+
+        <h3>Global navigation</h3>
+
+        <p>
+          Generates a list with coordinates that needs to be followed.
+          This coordinates are the vertices of the squares that form
+          the spiral:
+        </p>
+
+        <img class="pure-img-responsive" src="images/diagrama_2.png" alt="diagram 1">
+
+
+        <h3>Local navigation</h3>
+
+        <p>
+          This controller works with the difference between the angle of
+          the robot and the desired angle. If it is greater than a certain
+          value, only turns to the goal. Otherwise, goes forward.
+        </p>
+
+        <h3>angle error calculation</h3>
+        <p>
+          The initial situation is the following:
+        </p>
+
+        <img class="pure-img-responsive" src="images/diagrama_3.png" alt="diagram 1">
+
+        <p>
+          I need the vector going from the robot to the target, so I
+          substract the robot location from the target location:
+        </p>
+
+        <img class="pure-img-responsive" src="images/diagrama_4.png" alt="diagram 1">
+
+        <p>
+          To calculate the angle, I use the dot product. By its definition:
+        </p>
+
+        <div style="text-align: center;">
+          <img class="pure-img-responsive" src="images/equation_1.svg" alt="diagram 1">
+        </div>
+
+        <p>
+          Solving for &theta;:
+        </p>
+
+        <div style="text-align: center;">
+          <img class="pure-img-responsive" src="images/equation_2.svg" alt="diagram 1">
+        </div>
+
+        <p>
+          As for the sign, is negative if the cross product is negative.
+        </p>
+        
+        <h2 class="content-subhead">People detection</h2>
+        <p>
+          For this I use Haar feature-based cascade classifiers
+          from opencv to detect faces. This algorithm won't work
+          if the face is not in a vertical position, so I rotate
+          the image as necessary.
+        </p>
+
+        <div style="text-align: center;">
+          <img src="images/rajoy_2.gif" alt="rajoy" width="250"/>
+        </div>
+
+        <h2 class="content-subhead">People position</h2>
+        <p>
+          The central pixels of the image corresponds to the
+          coordinates position of the drone, so I use this to get
+          people's coordinates. To do that, the image that I feed
+          to the face detection function is a center cutout:
+        </p>
+
+        <div style="text-align: center;">
+          <img class="pure-img-responsive" src="images/diagrama_5.png" alt="diagram 1">
+        </div>
+
+        <h1 style="text-align: center; padding-top: 100px; padding-bottom: 40px;"> Demo video </h1>
+
+
+        <iframe width="853" height="480" src="https://www.youtube.com/embed/APs81rqlKIVQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+    
+
+
+
+      </div>
+    </div>
+  </div>
+  <script src="../../ui.js"></script>
+</body>
+</html>
