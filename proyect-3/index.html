@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>exercise 2</title>
+  <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/pure-min.css" integrity="sha384-Uu6IeWbM+gzNVXJcM9XV3SohHtmWE+3VGi496jvgX1jyvDTXfdK+rfZc8C1Aehk5" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.6/build/grids-responsive-min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+  <div id="layout">
+    <div id="main">
+      <div class="header">
+        <h1>Autoparking</h1>
+        <h2>a laser and FSM approach</h2>
+      </div>
+
+      <div class="content">
+
+        <h2 class="content-subhead">Desired behavior</h2>
+        <p>
+          The car should find a parallel parking spot, and park without
+          hitting other cars.
+        </p>
+
+        <h2 class="content-subhead">Available sensors</h2>
+        <p>
+          For this practice, we have three lasers; one at the front,
+          one at the right and one at the back.
+        </p>
+
+        <h2 class="content-subhead">Actuators</h2>
+        <p>
+          We can set  linear velocity and angular velocity of the car.
+        </p>
+
+        <h2 class="content-subhead">Approach</h2>
+        <p>
+          I am going to use a finite state machine architecture, where
+          each state is a python class that inherits from an "abstract"
+          and general base class. This classes must implement the methods
+          defined in the base class, since later another class "FSM" is going
+          to take those classes and call the base methods.
+        </p>
+        <p>
+          The methods are:
+        </p>
+        <img class="pure-img-responsive" src="images/state_classes.svg" alt="diagram 1">
+
+        <p>
+          This facilitates the execution of the FSM, since then a
+          single command has to be executed:
+        </p>
+
+        <img class="pure-img-responsive" src="images/tick.svg" alt="diagram 1">
+
+
+        <h2 class="content-subhead">States</h2>
+
+        <h3>SearchSpot</h3>
+        <p>
+          In this state the car advances while checking with the right
+          laser if there is a spot where it can fit. To do that, it checks
+          the values of the laser in a certain angle as can be seen in the
+          next image. If a value in that range is less than a threshold,
+          then there is an obstacle, so it cannot park.
+        </p>
+        <img class="pure-img-responsive" src="images/diagrama_1.png" alt="diagram 1">
+        <p>
+          The moment it finds a spot, it transitions to the next state.
+        </p>
+
+        <h3>GoForward</h3>
+        <p>
+          The car advances while checking the distance with the back car
+          using the back laser. As long as that distance is below a
+          certain threshold, it's still too close, so it keeps advancing.
+        </p>
+
+        <img class="pure-img-responsive" src="images/diagrama_2.png" alt="diagram 1">
+
+        <p>
+          Once it exceeds the threshold, it transitions to the next state.
+        </p>
+
+        <h3>GoBackwards</h3>
+        <p>
+          The car starts to go backwards with a positive angular velocity
+          (turning the wheel to the right in a real car). Once the
+          distance with the back car goes below a threshold, it changes
+          to a negative angular velocity (wheel to the left).
+        </p>
+
+        <img class="pure-img-responsive" src="images/diagrama_3.png" alt="diagram 1">
+
+        <p>
+          Now it continues until it reaches another threshold:
+        </p>
+
+        <img class="pure-img-responsive" src="images/diagrama_4.png" alt="diagram 1">
+
+        <p>
+          When this occurs, it transitions to the next state.
+        </p>
+
+        <h3>Reposition</h3>
+        <p>
+          In this state the car advances while turning to the right 
+          (negative angular velocity).
+        </p>
+        <img class="pure-img-responsive" src="images/diagrama_5.png" alt="diagram 1">
+        <p>
+          The moment it reaches a threshold, it transitions to the next state.
+        </p>
+
+        <h3>LastPart</h3>
+        <p>
+          Finally, it advances while turning to the left 
+          (positive angular velocity).
+        </p>
+        <img class="pure-img-responsive" src="images/diagrama_6.png" alt="diagram 1">
+        <p>
+          The moment it reaches a threshold, it transitions to the
+          Finished state, which sets the lineal and angular velocity to 0.
+        </p>
+
+
+
+
+
+        <h1 style="text-align: center; padding-top: 100px; padding-bottom: 40px;"> Demo video </h1>
+
+
+        <iframe width="853" height="480" src="https://www.youtube.com/embed/Qu39V8t-ywk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+      </div>
+    </div>
+  </div>
+  <script src="../../ui.js"></script>
+</body>
+</html>
