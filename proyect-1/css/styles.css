@@ -246,3 +246,23 @@ Hides the menu at `48em`, but modify this based on your app's needs.
         left: 150px;
     }
 }
+
+#link:link {
+    color: black;
+    text-decoration: none;
+}
+
+#link:visited {
+    color: black;
+    text-decoration: none;
+}
+
+#link:hover {
+    color: black;
+    text-decoration: underline;
+}
+
+#link:active {
+    color: black;
+    text-decoration: underline;
+}

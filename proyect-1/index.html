@@ -12,67 +12,532 @@
   <div id="layout">
     <div id="main">
       <div class="header">
-        <h1>vacuum cleaner</h1>
-        <h2>a reactive approach</h2>
+        <h1>Localized vacuum cleaner</h1>
+        <h2>a localized approach</h2>
       </div>
 
       <div class="content">
 
-        <h2 class="content-subhead">First approach</h2>
+        <h2 class="content-subhead">Goal</h2>
         <p>
-          First I decided to use the bumper, and came with the following FSM:
+          The goal of this practice is to implement an algorithm to
+          clean the floor, but this time the robot has a map and is
+          localized in it, so it will be able to clean the floor
+          in an orderly manner (left on <a href="#fig_1" id="link">Fig. 1</a>), 
+          unlike the basic vacuum cleaner, which had to use a
+          pseudo random algorithm due to its perception limits
+          (right on <a href="#fig_1" id="link">Fig. 1</a>).
         </p>
 
-        <img class="pure-img-responsive" src="images/diagrama_1.png" alt="diagram 1">
-
-        <h2 class="content-subhead">Using the laser</h2>
-        <p>
-          When testing the design, I realised that the methods to access the
-          bumper state were giving me problems, so I started using the
-          laser. Since there was no physical contact anymore,
-          the GoBackward state was no longer needed, so I removed it.
-        </p>
-
-        <img class="pure-img-responsive" src="images/diagrama_2.png" alt="diagram 2">
+        <div style="text-align: center;" id="fig_1">
+          <figure>
+            <img class="pure-img-responsive" src="images/localized_vs_not.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 1. Algorithm comparison.
+            </figcaption>
+          </figure>
+        </div>
 
         <p>
-          The timers are chosen randomly, and variations of the range
-          yields different results. For example, at first I thought that
-          the best way to do it was to set short timers, so that
-          the robot would stick to the walls. There were one problem:
-          when it entered a room, it could not get out.
-          The following video shows the problem:
-        </p>
-        <iframe width="853" height="480" src="https://www.youtube.com/embed/APs81qlKIVQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-
-        <p>
-          To solve this, I put larger ranges for the timers. I also
-          changed the probability distribution, slightly favoring
-          smaller timers(i.e. smaller turns) to favor the current
-          direction of movement, without losing the possibility of
-          making bigger turns.
-        </p>
-        <p>
-          By that time, I also added the DoSpiral state:
+          This technique speeds up the cleaning process and makes
+          it more efficient.
         </p>
 
-        <img class="pure-img-responsive" src="images/diagrama_3.png" alt="diagram 2">
-
+        <h2 class="content-subhead">Available data</h2>
         <p>
-          DoSpiral activates with a certain probability, currently at 1%.
+          For this practice, we have the following function,
+          which gives us the location information with respect to
+          the gazebo map (meters).
+        </p>
+        <div style="text-align: center;" id="fig_2">
+          <figure>
+            <img class="pure-img-responsive" src="images/funcion_1.svg" style="align-self: center; alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 2. Function to get location.
+            </figcaption>
+          </figure>
+        </div>
+
+        <h2 class="content-subhead">Actuators</h2>
+        <p>
+          We can set  linear velocity and angular velocity of the robot
+          with the following functions.
+        </p>
+        <div style="text-align: center;" id="fig_3">
+          <figure>
+            <img class="pure-img-responsive" src="images/funcion_2.svg" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 3. Functions to set velocities.
+            </figcaption>
+          </figure>
+        </div>
+
+        <h2 class="content-subhead">Problems to solve</h2>
+        <p>
+          There are four challenges that need to be solved.
+          I'm going to solve them separately, and then
+          put the solutions together:
         </p>
 
-        <h2 class="content-subhead">Final version demo</h2>
         <p>
-          Here is a timelapse of a ~15 min attempt:
-        </p>
-        <p>
-          (due to a bug in the platform, the evaluator stops when
-          a dialogue pops up, so i cannot test it for extended
-          periods of time)
+          <ul>
+            <li> <a href="#section_1" id="link">(Section 1).</a>
+              Process the map image and extract from it a usable
+              grid map.</li>
+            <li> <a href="#section_2" id="link">(Section 2).</a>
+              Obtain the correspondence between the coordinate system
+              of the location given by the robot (meters) and the
+              coordinate system of the grid map (squares). </li>
+            <li> <a href="#section_3" id="link">(Section 3).</a>
+              Develop a coverage algorithm (BSA), which uses the
+              grid map and returns a route. </li>
+            <li> <a href="#section_4" id="link">(Section 4).</a>
+              Develop a controller, which takes target points, and guide
+              the robot there. </li>
+        </ul>
         </p>
 
-        <iframe width="853" height="480" src="https://www.youtube.com/embed/OqDG8FnTQgk" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        <h3 id="section_1"> 1. Map image processing</h3>
+
+        <div style="text-align: center;" id="fig_4">
+          <figure>
+            <img class="pure-img-responsive" src="images/mapgrannyannie.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 4. Original map.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          The first thing I need to do is to expand the obstacles,
+          so then in the coverage algorithm I can assume that the
+          robot is a point:
+        </p>
+        <div style="text-align: center;" id="fig_5">
+          <figure>
+            <img class="pure-img-responsive" src="images/expanded_map.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 5. Map with expanded obstacles.
+            </figcaption>
+          </figure>
+        </div>
+        
+        <p>
+          Then I need to divide the map in a grid.
+          First I crop the image to a size of 1000x1000. This allows
+          me to create squares of 25 pixels and  obtain exactly a map
+          of 40x40 squares. Here is a portion of the result:
+        </p>
+        <div style="text-align: center;" id="fig_6">
+          <figure>
+            <img class="pure-img-responsive" src="images/grid_map.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 6. Portion of the map divided in a 40x40 grid.
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3 id="section_2"> 2. Transformation matrix between gazebo and the grid map</h3>
+        <p>
+          The coverage algorithm will return a route of the form:
+          [[3, 4], [3, 5], ...]. These numbers refer to the squares of the grid
+          map obtained in section 1 <a href="#fig_6" id="link">(Fig. 6)</a>, which obviously we can't use directly
+          on the controller. We need to multiply each target with a matrix such
+          that the result is expressed in the gazebo coordinate system.
+        </p>
+
+        <p>
+          This is the coordinate axis of the gazebo coordinate system (O_B):
+        </p>
+        <div style="text-align: center;" id="fig_7">
+          <figure>
+            <img class="pure-img-responsive" src="images/mapa_sin_grid_con_ejes.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 7. Gazebo coordinate system (O_B).
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          Each square of the image measures 1x1 meter. In order to be
+          useful to take measures, I apply a grid overlay with a square
+          size of 1/10 of the original, so now I can be accurate
+          within ± 10cm:
+        </p>
+        <div style="text-align: center;" id="fig_8">
+          <figure>
+            <img class="pure-img-responsive" src="images/grid_sobre_mapa_con_ejes.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 8. Grid applied over <a href="#fig_7" id="link">Fig. 7</a>.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          This is the coordinate axis of the map image coordinate system 
+          (O_A, in pixels):
+        </p>
+
+        <div style="text-align: center;" id="fig_9">
+          <figure>
+            <img class="pure-img-responsive" src="images/recorte_mapa_con_ejes.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 9. Map image coordinate system (O_A).
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          The first thing that have to be calculated is the traslation matrix
+          to go from O_B to O_A. For that, I need the coordinates of
+          O_A with respect to O_B. I want to obtain that from
+          <a href="#fig_8" id="link">(Fig. 8)</a>, but the problem
+          is that I don't know exactly where it is, because it
+          doesn't coincide with any recognizable point.
+        </p>
+        <p>
+          The solution to this problem is to use a support
+          coordinate system, which position will be known in the two
+          reference frames. That point has to be something recognizable
+          in <a href="#fig_8" id="link">(Fig. 8)</a> and
+          <a href="#fig_9" id="link">(Fig. 9)</a>. I picked this point:
+        </p>
+        <div style="text-align: center;" id="fig_10">
+          <figure>
+            <img class="pure-img-responsive" src="images/esquina_seleccionada_total.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 10. Picked point for the support coordinate system.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          So now I have the following:
+        </p>
+        <div style="text-align: center;" id="fig_11">
+          <figure>
+            <img class="pure-img-responsive" src="images/gazebo_ejes_B_C.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 11. New support coordinate system (O_C).
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          Now I need the transformation matrix that goes from O_B to O_C.
+          The general matrix is:
+        </p>
+        <div style="text-align: center;" id="fig_12">
+          <figure>
+            <img class="pure-img-responsive" src="images/matriz_rot_general.png" style="max-width:50%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 12. General transformation matrix.
+            </figcaption>
+          </figure>
+        </div>
+        <p>
+          I need five parameters.
+        </p>
+        <ul>
+          <li>Angle &theta; = 90°.</li>
+          <li>Traslation in x and y. Looking at
+            <a href="#fig_8" id="link">Fig. 8</a>, t_x = 5.3; t_y = -3.46</li>
+          <li>Width and height scale. This two parameters are what makes
+            the correspondence between meters of
+            <a href="#fig_7" id="link">Fig. 7</a>, and pixels of
+            <a href="#fig_9" id="link">Fig. 9</a>. To estimate them,
+          I need another point in another recognizable position.</li>
+        </ul>
+        <p>
+          I select the following point:
+        </p>
+
+        <div style="text-align: center;" id="fig_13">
+          <figure>
+            <img class="pure-img-responsive" src="images/segundo_punto_gazebo.png" style="max-width:100%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 13. Second picked point in gazebo coordinate system (O_B).
+            </figcaption>
+          </figure>
+        </div>
+        <p>
+          Its coordinates in O_B are:
+        </p>
+
+        <div style="text-align: center;" id="fig_14">
+          <figure>
+            <img class="pure-img-responsive" src="images/ecuacion_segundo_punto_gazebo.png" style="max-width:30%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 14. Coordinates of the second picked point in O_B.
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="text-align: center;" id="fig_15">
+          <figure>
+            <img class="pure-img-responsive" src="images/segundo_punto.png" style="max-width:100%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 15. Second picked point in support coordinate system (O_C).
+            </figcaption>
+          </figure>
+        </div>
+        <p>
+          Its coordinates in O_C are:
+        </p>
+
+        <div style="text-align: center;" id="fig_16">
+          <figure>
+            <img class="pure-img-responsive" src="images/ecuacion_segundo_punto_image_map.png" style="max-width:30%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 16. Coordinates of the second picked point in O_C.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          Now, I have the following:
+        </p>
+        <div style="text-align: center;" id="fig_17">
+          <figure>
+            <img class="pure-img-responsive" src="images/ecuacion_para_despejar_w_h.png" style="max-width:60%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 17. Resulting equation.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          Where I know all variables except w and h, so I isolate them:
+        </p>
+        <div style="text-align: center;" id="fig_18">
+          <figure>
+            <img class="pure-img-responsive" src="images/despeje_h.png" style="max-width:50%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 18. Value of h.
+            </figcaption>
+          </figure>
+        </div>
+        <div style="text-align: center;" id="fig_19">
+          <figure>
+            <img class="pure-img-responsive" src="images/despeje_w.png" style="max-width:50%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 19. Value of w.
+            </figcaption>
+          </figure>
+        </div>
+
+        <div style="text-align: center;" id="fig_20">
+          <figure>
+            <img class="pure-img-responsive" src="images/ecuacion_R_B_C.png" style="max-width:70%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 20. Traslation matrix that goes from O_B to O_C.
+            </figcaption>
+          </figure>
+        </div>
+
+
+
+        <p>
+          Now I need the transformation matrix that goes from O_C to O_A:
+        </p>
+        <div style="text-align: center;" id="fig_21">
+          <figure>
+            <img class="pure-img-responsive" src="images/X_C_a_X_A.png" style="max-width:100%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 21. O_C and O_A coordinate systems.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          It's a simple translation (in pixels):
+        </p>
+
+        <div style="text-align: center;" id="fig_22">
+          <figure>
+            <img class="pure-img-responsive" src="images/ecuacion_X_C_a_X_A.png" style="max-width:40%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 22. Traslation matrix that goes from O_C to O_A.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          Finally, I need to go from pixels to the squares of
+          <a href="#fig_6" id="link">Fig. 6</a>. That is,
+          the transformation matrix that goes from O_A to O_D:
+        </p>
+
+
+        <div style="text-align: center;" id="fig_23">
+          <figure>
+            <img class="pure-img-responsive" src="images/X_A_a_X_D.png" style="max-width:100%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 23. O_A and O_D coordinate systems.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          Given that each square is made up of 25 pixels, the transformation
+          matrix apply a scaling of 25 in each axis. I also translate it a few
+          pixels to better align it with the map.
+        </p>
+
+        <div style="text-align: center;" id="fig_24">
+          <figure>
+            <img class="pure-img-responsive" src="images/ecuacion_X_A_a_X_D.png" style="max-width:40%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 24. Traslation matrix that goes from O_A to O_D.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          Now I have the whole transformation matrix that I can use to
+          convert from points given by the coverage algorithm to
+          the gazebo coordinate system:
+        </p>
+
+        <div style="text-align: center;" id="fig_25">
+          <figure>
+            <img class="pure-img-responsive" src="images/ecuacion_finalisima.png" style="max-width:40%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 25. Final equation.
+            </figcaption>
+          </figure>
+        </div>
+
+
+
+
+        <h3 id="section_3"> 3. Coverage algorithm.</h3>
+        <p>
+          The algorithm that I implement is based on the BSA algorithm.
+          Here are the steps I did:
+        </p>
+        <ul>
+          <li>The robot goes next to a wall, and starts going along it,
+            with the wall on its left.
+          </li>
+          <li>If it encounters an obstacle, turns right.
+            If it stops having the wall on its left, turn left.</li>
+            <li>Mark all the squares that it has passed over as cleaned,
+              which are treated like obstacles.
+            </li>
+
+            <li>When it cannot go anywhere, it searches a free square
+              and goes there.
+              I do the search with gradient path planning (GPP) </li>
+        </ul>
+
+        <div style="text-align: center;" id="fig_26">
+          <figure>
+            <img class="pure-img-responsive" src="images/bsa_diagrama.png" style="max-width:100%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 26. BSA algorithm.
+            </figcaption>
+          </figure>
+        </div>
+
+
+
+
+        <h3 id="section_4"> 4. Controller. </h3>
+        <p>
+          I have access to the angle of the robot through the function 
+          HAL.getPose3d().yaw (angle 'a' in the image, in radians),
+          but I need the vector asociated with it.
+          It's easy to calculate:
+        </p>
+        <p> x = cos(a) </p>
+        <p>y = sin(a)</p>
+        <div style="text-align: center;" id="fig_27">
+          <figure>
+            <img class="pure-img-responsive" src="images/angle_from_robot.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 27. Angle to vector.
+            </figcaption>
+          </figure>
+        </div>
+        <p>
+          Now I have the following situation:
+        </p>
+        <div style="text-align: center;" id="fig_28">
+          <figure>
+            <img class="pure-img-responsive" src="images/diagrama_1.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 28. Vectors situation.
+            </figcaption>
+          </figure>
+        </div>
+        <p>
+          Now I need the vector that goes from the robot to the target.
+          For that, I substract the robot location from the target
+          location. The angle between the two vectors is the angle error.
+        </p>
+        <div style="text-align: center;" id="fig_29">
+          <figure>
+            <img class="pure-img-responsive" src="images/diagrama_2.png" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 29. Angle error calculation.
+            </figcaption>
+          </figure>
+        </div>
+        
+        <p>
+          To calculate the angle, I use the dot product. By its definition:
+        </p>
+
+        <div style="text-align: center;" id="fig_30">
+          <figure>
+            <img class="pure-img-responsive" src="images/equation_1.png" style="max-width:30%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 30. Dot product equation.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          Solving for &theta;:
+        </p>
+
+        <div style="text-align: center;" id="fig_31">
+          <figure>
+            <img class="pure-img-responsive" src="images/equation_2.png" style="max-width:30%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 31. value of &theta;.
+            </figcaption>
+          </figure>
+        </div>
+
+        <p>
+          As for the sign, is negative if the cross product is negative.
+        </p>
+        <p>
+          If that angle is greater than a certain threshold, the robot
+          will only turn (clockwise if the angle is positive,
+          counterclockwise if negative). If is below, it will go forward.
+        </p>
+
+        <h2 class="content-subhead">Result</h2>
+        
+    
+        <div style="text-align: center;" id="fig_32">
+          <figure>
+            <img class="pure-img-responsive" src="images/estado_final_barrido.png" style="max-width:100%;height: auto;" alt="diagram 1">
+            <figcaption style="font-style: italic; font-weight: bold;">
+              Fig. 32. Final result.
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3>Timelapse</h3>
+        <iframe width="853" height="480" src="https://www.youtube.com/embed/BMy4RqWADAY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+        <h3>Video</h3>
+        <iframe width="853" height="480" src="https://www.youtube.com/embed/G9QdunZFyuA" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 
 
       </div>
